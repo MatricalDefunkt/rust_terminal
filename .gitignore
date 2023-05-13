@@ -1,2 +1,5 @@
 /target
 /.vscode
+
+# Ignore all lock files
+Cargo.lock
