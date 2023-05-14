@@ -1,11 +1,11 @@
 #![allow(unused_variables, unused_imports, unused_assignments)]
 use crossterm::{
-    cursor::{MoveRight, MoveUp},
+    cursor::{MoveDown, MoveRight, MoveUp},
     event::{
         poll, read, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton,
         MouseEvent, MouseEventKind,
     },
-    terminal::enable_raw_mode,
+    terminal::{self, enable_raw_mode},
     QueueableCommand,
 };
 
@@ -19,7 +19,7 @@ fn main() {
     let mut stdout = std::io::stdout();
     stdout.queue(EnableMouseCapture).unwrap();
     enable_raw_mode().unwrap();
-    let mut rows: Vec<Row> = vec![];
+    let mut rows: Vec<Row> = vec![{ Row { chars: vec![] } }];
     let mut current_char: KeyCode = KeyCode::Null;
     let mut current_row_index = 0;
     loop {
@@ -32,11 +32,12 @@ fn main() {
                                 if key.modifiers.contains(KeyModifiers::CONTROL) {
                                     match c {
                                         'c' => {
-                                            println!("Exiting...");
+                                            println!("\nExiting...");
                                             break;
                                         }
                                         's' => {
-                                            println!("Saving...");
+                                            println!("\nSaving...");
+                                            break;
                                         }
                                         _ => {}
                                     }
@@ -77,15 +78,13 @@ fn main() {
                                         };
 
                                         stdout.queue(MoveUp(1)).unwrap();
-                                        stdout
-                                            .queue(MoveRight(
-                                                if rows[current_row_index].chars.len() > 1 {
-                                                    rows[current_row_index].chars.len() as u16
-                                                } else {
-                                                    0
-                                                },
-                                            ))
-                                            .unwrap();
+                                        if rows[current_row_index].chars.len() > 0 {
+                                            stdout
+                                                .queue(MoveRight(
+                                                    rows[current_row_index].chars.len() as u16,
+                                                ))
+                                                .unwrap();
+                                        }
                                         stdout.flush().unwrap();
                                     }
                                 }
@@ -98,19 +97,27 @@ fn main() {
                         }
                     }
                 }
-                // Event::Mouse(MouseEvent {
-                //     kind, row, column, ..
-                // }) => {
-                //     if kind == MouseEventKind::Down(MouseButton::Right)
-                //         || kind == MouseEventKind::Down(MouseButton::Left)
-                //     {
-                //         println!("Mouse clicked at ({}, {})", row, column);
-                //     }
+                Event::Mouse(MouseEvent {
+                    kind, row, column, ..
+                }) => {
+                    if kind == MouseEventKind::Down(MouseButton::Right)
+                        || kind == MouseEventKind::Down(MouseButton::Left)
+                    {
+                        println!("Mouse clicked at ({}, {})", row, column);
+                    }
 
-                //     if kind == MouseEventKind::Drag(MouseButton::Left) {
-                //         println!("({}, {})", row, column);
-                //     }
-                // }
+                    if kind == MouseEventKind::ScrollUp {
+                        stdout.queue(terminal::ScrollDown(1)).unwrap();
+                        stdout.queue(MoveDown(1)).unwrap();
+                        stdout.flush().unwrap();
+                    }
+
+                    if kind == MouseEventKind::ScrollDown {
+                        stdout.queue(terminal::ScrollUp(1)).unwrap();
+                        stdout.queue(MoveUp(1)).unwrap();
+                        stdout.flush().unwrap();
+                    }
+                }
                 _ => {}
             }
         }
