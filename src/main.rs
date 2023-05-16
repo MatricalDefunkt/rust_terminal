@@ -1,4 +1,9 @@
 #![allow(unused_variables, unused_imports, unused_assignments)]
+
+mod printer;
+
+use printer::{Row, Screen};
+
 use crossterm::{
     cursor::{MoveDown, MoveRight, MoveUp},
     event::{
@@ -10,10 +15,6 @@ use crossterm::{
 };
 
 use std::io::Write;
-
-struct Row {
-    chars: Vec<KeyCode>,
-}
 
 fn main() {
     let mut stdout = std::io::stdout();
